@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Breast Cancer Detection - KNN</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: "Segoe UI", Arial, sans-serif; min-height: 100vh; padding: 30px 16px;
+           background: linear-gradient(135deg, #1F3A5F 0%, #2E7D6B 100%); }
+    .card { background: #fff; max-width: 720px; margin: 0 auto; border-radius: 18px;
+            padding: 32px 30px; box-shadow: 0 20px 50px rgba(0,0,0,.25); }
+    h1 { text-align: center; color: #1F3A5F; font-size: 26px; }
+    .sub { text-align: center; color: #6b7785; font-size: 14px; margin: 6px 0 20px; }
+    .badges { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+    .badge { background: #eef3f8; color: #1F3A5F; font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 20px; }
+    .samples { display: flex; gap: 10px; justify-content: center; margin-bottom: 18px; flex-wrap: wrap; }
+    .samples button { width: auto; padding: 8px 16px; font-size: 13px; background: #fff; color: #1F3A5F;
+                      border: 2px solid #1F3A5F; border-radius: 8px; cursor: pointer; font-weight: 600; }
+    .samples button:hover { background: #eef3f8; }
+    h3.group { color: #1F3A5F; font-size: 14px; margin: 20px 0 10px; padding-bottom: 5px; border-bottom: 2px solid #eef3f8; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
+    label { display: block; font-size: 13px; font-weight: 600; color: #33404f; margin-bottom: 5px; }
+    input { width: 100%; padding: 10px; font-size: 15px; border: 2px solid #d5dde6; border-radius: 8px; outline: none; }
+    input:focus { border-color: #2E7D6B; }
+    .predict { width: 100%; margin-top: 22px; padding: 14px; font-size: 16px; font-weight: 600; color: #fff;
+               background: #1F3A5F; border: none; border-radius: 10px; cursor: pointer; }
+    .predict:hover { background: #2a4d7d; }
+    .result { margin-top: 24px; padding: 20px; text-align: center; border-radius: 14px; animation: pop .4s ease; }
+    .result.benign { background: #eaf6f2; border: 1px solid #bfe3d8; }
+    .result.malignant { background: #fdecea; border: 1px solid #f5c6c0; }
+    .result .label { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: #5a6a7a; }
+    .result .value { font-size: 36px; font-weight: 700; margin: 4px 0; }
+    .benign .value { color: #2E7D6B; } .malignant .value { color: #c0392b; }
+    .result .note { color: #6b7785; font-size: 13px; }
+    .error { margin-top: 18px; padding: 14px; text-align: center; border-radius: 10px; background: #fdecea;
+             color: #c0392b; border: 1px solid #f5c6c0; font-size: 14px; }
+    .disclaimer { margin-top: 22px; padding: 12px; background: #fff8e5; border: 1px solid #f0dca0;
+                  border-radius: 10px; color: #7a6420; font-size: 12px; text-align: center; }
+    @keyframes pop { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Breast Cancer Detection</h1>
+    <p class="sub">Predict benign or malignant from cell nucleus measurements using KNN</p>
+    <div class="badges">
+      <span class="badge">Model: K-Nearest Neighbors</span>
+      <span class="badge">K = {{ k }}</span>
+      <span class="badge">{{ n_features }} features</span>
+      <span class="badge">Test accuracy: {{ accuracy }}%</span>
+    </div>
+
+    <div class="samples">
+      <button type="button" onclick="fill('benign')">Load typical benign sample</button>
+      <button type="button" onclick="fill('malignant')">Load typical malignant sample</button>
+    </div>
+
+    <form method="POST">
+      {% for g in groups %}
+      <h3 class="group">{{ g.title }}</h3>
+      <div class="grid">
+        {% for f in g.fields %}
+        <div>
+          <label for="{{ f.key }}">{{ f.label }}</label>
+          <input type="number" step="any" min="0" id="{{ f.key }}" name="{{ f.key }}"
+                 value="{{ request.form.get(f.key, '') }}" required>
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+      <button class="predict" type="submit">Predict</button>
+    </form>
+
+    {% if result %}
+    <div class="result {{ 'malignant' if result.is_malignant else 'benign' }}">
+      <div class="label">Prediction</div>
+      <div class="value">{{ result.label }}</div>
+      <div class="note">{{ result.confidence }}% of the {{ k }} nearest neighbours agree</div>
+    </div>
+    {% endif %}
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+    <div class="disclaimer">
+      Educational project only. This is not a medical device and must not be used for diagnosis.
+      Always consult a qualified doctor.
+    </div>
+  </div>
+
+  <script>
+    const samples = {{ samples | tojson }};
+    function fill(type) {
+      Object.entries(samples[type]).forEach(([key, val]) => {
+        document.getElementById(key).value = val;
+      });
+    }
+  </script>
+</body>
+</html>
